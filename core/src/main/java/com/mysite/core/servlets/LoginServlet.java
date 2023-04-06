@@ -1,7 +1,7 @@
 package com.mysite.core.servlets;
 
 import com.mysite.core.models.Employee;
-import java.io.IOException; 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -17,6 +17,8 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -26,6 +28,8 @@ import com.google.gson.reflect.TypeToken;
 public class LoginServlet extends SlingAllMethodsServlet {
 
     private static final long serialVersionUID = -6587862240235618977L;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoginServlet.class);
 
     @Override
     protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response)
@@ -43,6 +47,8 @@ public class LoginServlet extends SlingAllMethodsServlet {
         Gson gson = new Gson();
         List<Employee> employees = gson.fromJson(jsonString, new TypeToken<List<Employee>>() {}.getType());
 
+        LOGGER.debug("Loaded employee data from JSON file: {}", employees);
+
         // Find the employee with the matching username and password
         Employee matchedEmployee = null;
         for (Employee employee : employees) {
@@ -52,28 +58,26 @@ public class LoginServlet extends SlingAllMethodsServlet {
             }
         }
 
-       // If the entered credentials match an employee, redirect to the appropriate home page based on the user's role
+        // If the entered credentials match an employee, redirect to the appropriate home page based on the user's role
         if (matchedEmployee != null) {
-           String redirectUrl = "/content/";
+            String redirectUrl = "/content/";
             if (matchedEmployee.getRole().equals("user")) {
-               redirectUrl += "userhome.html";
+                redirectUrl += "userhome.html";
             } else if (matchedEmployee.getRole().equals("admin")) {
                 redirectUrl += "adminpage.html";
-           }
+            }
             redirectUrl += "/" + matchedEmployee.getUsername();
+
+            LOGGER.debug("Redirecting user to URL: {}", redirectUrl);
+
             response.sendRedirect(redirectUrl);
-        
-       } else {
-    	   
+
+        } else {
+
             // If no matching employee is found, display an error message on the login page
-    	   
-    	   response.sendRedirect("/content/loginpage0.html?error=Invalid%20username%20or%20password");
-//            request.setAttribute("error", "Invalid username or password");
-//
-//          request.getRequestDispatcher("/content/loginpage0.html").forward(request, response);
-       }
+            LOGGER.warn("Invalid username or password entered for user: {}", username);
+
+            response.sendRedirect("/content/loginpage0.html?error=Invalid%20username%20or%20password");
+        }
     }
-        
-
-
 }
